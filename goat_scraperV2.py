@@ -6,7 +6,7 @@ import random
 # from bs4 import BeautifulSoup
 
 
-#extracts all user-agents from the provided 'ua_file.txt' into a lst then randomly selects a user-agent
+#extracts all user-agents from the provided 'ua_file.txt' into a list then randomly selects a user-agent
 def getUserAgent():
     randomUserAgent = ""
     listOfUserAgents = []
@@ -40,23 +40,18 @@ def getAllSneakers():
         'x-algolia-application-id': '2FWOTDVM2O',
         'x-algolia-api-key': 'ac96de6fef0e02bb95d433d8d5c7038a'
     }
-    return requests.post(url, data=json.dumps(form_data), params=query_params).json()['results'][0]['hits']
+    response = requests.post(url, data=json.dumps(form_data), params=query_params).json()['results'][0]['hits']
+    ############################
+    sneakersList = []
+    for sneaker in response:
+        sneakersList.append(Sneaker(sneaker['name'], sneaker['slug'], sneaker['retail_price_cents']/100, setSneakerSizesAndPrices(sneaker['slug'])))
+        # sleep(5)
+
+    return sneakersList
 
 
-
-class Sneaker:
-    def __init__(self, name, query_id, retail_price):
-        self.name = name
-        self.query_id = query_id
-        self.retail_price = retail_price
-        self.sizeAndPrice = {}
-
-    # #returns product info for each sneaker
-    # def getSneakerInfo(self):
-    #     info = {}
-
-    #returns all sizes and their corresponding price for each sneaker
-    def getSneakerSizesAndPrices(self):
+def setSneakerSizesAndPrices(query_id):
+        sizeAndPrice = {}
         url = 'https://www.goat.com/web-api/v1/product_variants'
         user_agent = getUserAgent()
         headers = {
@@ -68,7 +63,7 @@ class Sneaker:
         }
 
         query_params = {
-            "productTemplateId": self.query_id
+            "productTemplateId": query_id
         }
 
         # while True:
@@ -82,7 +77,7 @@ class Sneaker:
                     for i in range(0, len(page)):
                         #check ONLY for new shoes with boxes in good condition
                         if(page[i]['boxCondition'] == "good_condition" and page[i]['shoeCondition'] == "new_no_defects"):
-                            self.sizeAndPrice.update({page[i]['size']: page[i]['lowestPriceCents']['amount']/100})
+                            sizeAndPrice.update({page[i]['size']: page[i]['lowestPriceCents']['amount']/100})
                         # print(str(page[i]['size']) + "||" + str(page[i]['lowestPriceCents']['amount'] / 100))
                 else:
                     # print("Server did not return an 'OK' response. Content was: {!r}".format(response.content))
@@ -97,35 +92,25 @@ class Sneaker:
                 break
 
         else: # if not sizeAndPrice:
-            self.sizeAndPrice.update({"Size_Timeout": "Price_Timeout"})
+            sizeAndPrice.update({"Size_Timeout": "Price_Timeout"})
 
-        return self.sizeAndPrice
+        return sizeAndPrice
 
+
+
+class Sneaker:
+    def __init__(self, name, query_id, retail_price, sizeAndPrice):
+        self.name = name
+        self.query_id = query_id
+        self.retail_price = retail_price
+        self.sizeAndPrice = sizeAndPrice
 
 if __name__ == "__main__":
-    sneakersList = []
-    sneakers_page = getAllSneakers()
 
-    for sneaker in sneakers_page:
-        sneakersList.append(Sneaker(sneaker['name'], sneaker['slug'], sneaker['retail_price_cents']/100))
-
-    for sneaker in sneakersList:
+    sneakers = getAllSneakers()
+    for sneaker in sneakers:
         print("Name: " + sneaker.name)
         print("Retail Price: " + str(sneaker.retail_price))
-        # print(sneaker.getSneakerSizesAndPrices())
-        print(sneaker.getSneakerSizesAndPrices())
-        sleepTime = random.randrange(1,4)
-
-        print("Delaying for " + str(sleepTime) + "s..." )
-        sleep(sleepTime)
-
-    # pprint.pprint(sneakersList[0].getSneakerSizesAndPrices())
-    # print(getUserAgent())
-
-    # sneakers = getAllSneakers()
-    # for sneaker in sneakers:
-    #     print("Name: " + sneaker.name)
-    #     print("Retail Price: " + str(sneaker.retail_price))
-    #     print("Buy New: " + sneaker.sizeAndPrice)
+        print(sneaker.sizeAndPrice)
 
 
