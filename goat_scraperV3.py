@@ -102,6 +102,9 @@ def setSneakerSizesAndPrices(query_id):
                         #check ONLY for new shoes with boxes in good condition
                         if(page[i]['boxCondition'] == "good_condition" and page[i]['shoeCondition'] == "new_no_defects"):
                             sizeAndPrice.update({page[i]['size']: page[i]['lowestPriceCents']['amount']/100})
+                elif (response.json()['success'] == False): #catches if query_id invalid
+                    sizeAndPrice.update({"message": "Invaid product id."})
+                    break
                 else:
                     raise PermissionError
 
